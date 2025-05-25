@@ -1,0 +1,14 @@
+# Dados sensíveis e temporários
+covid.duckdb
+*.pyc
+__pycache__/
+.dbt/
+logs/
+.env
+.env.*
+
+# Arquivos de dados brutos
+seeds/*.csv
+
+# Arquivos do sistema
+*.DS_Store
