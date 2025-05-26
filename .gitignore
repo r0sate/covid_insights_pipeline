@@ -1,15 +1,18 @@
-# Dados sensíveis e temporários
-covid.duckdb
+# 🔐 Sensitive and temporary files
 *.pyc
 __pycache__/
-dbt_profiles/
-.dbt/
-logs/
 .env
 .env.*
 
-# Arquivos de dados brutos
+# 📦 dbt artifacts
+target/
+dbt_packages/
+.dbt/
+logs/
+dbt_profiles/
+
+# 📂 Raw data files
 seeds/*.csv
 
-# Arquivos do sistema
+# 💻 System files
 *.DS_Store
