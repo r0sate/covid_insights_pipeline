@@ -2,6 +2,7 @@
 covid.duckdb
 *.pyc
 __pycache__/
+dbt_profiles/
 .dbt/
 logs/
 .env
