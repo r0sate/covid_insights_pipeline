@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: facts_covid_metrics
+    description: "Fact table with COVID-19 aggregated metrics"
+    tests:
+      - name: test_total_cases_monotonic_or_constant
+        description: >
+          Fails if total_cases is not strictly increasing by date within each iso_code.
+          This captures both decreases (invalid) and constants (indicates lack of update).
+
+      - name: test_missing_dates_per_country
+        description: >
+          Fails if any iso_code has fewer distinct dates than the total number of dates in the dim_date table.
+          This ensures temporal completeness for all countries across the expected calendar range.

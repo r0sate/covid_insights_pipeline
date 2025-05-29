@@ -16,97 +16,87 @@ clean-targets:
 
 models:
   covid_insights_pipeline:
-    +schema: INVALID_SCHEMA_SHOULD_NOT_BE_USED  # Proteção contra modelos mal posicionados
-
+    +schema: dbt_raw
     staging:
       +schema: STAGING
       +materialized: view
 
     marts:
-      dimensions:
-        +schema: DIM
-        +materialized: table
-        dim_date:
-          +alias: dim_date
-        dim_location:
-          +alias: dim_location
-        dim_location_type:
-          +alias: dim_location_type
+      +schema: MART     
+      +materialized: table
+      dimensions: {}
+      facts: {}
 
-      facts:
-        +schema: FACT
-        +materialized: table
-        facts_covid_metrics:
-          +alias: facts_covid_metrics
 
-seeds:
-  covid_insights_pipeline:
-    owid_covid_data:
-      +column_types:
-        iso_code: string
-        continent: string
-        location: string
-        date: date
-        total_cases: float
-        new_cases: float
-        new_cases_smoothed: float
-        total_deaths: float
-        new_deaths: float
-        new_deaths_smoothed: float
-        total_cases_per_million: float
-        new_cases_per_million: float
-        new_cases_smoothed_per_million: float
-        total_deaths_per_million: float
-        new_deaths_per_million: float
-        new_deaths_smoothed_per_million: float
-        reproduction_rate: float
-        icu_patients: float
-        icu_patients_per_million: float
-        hosp_patients: float
-        hosp_patients_per_million: float
-        weekly_icu_admissions: float
-        weekly_icu_admissions_per_million: float
-        weekly_hosp_admissions: float
-        weekly_hosp_admissions_per_million: float
-        total_tests: float
-        new_tests: float
-        total_tests_per_thousand: float
-        new_tests_per_thousand: float
-        new_tests_smoothed: float
-        new_tests_smoothed_per_thousand: float
-        positive_rate: float
-        tests_per_case: float
-        tests_units: string
-        total_vaccinations: float
-        people_vaccinated: float
-        people_fully_vaccinated: float
-        total_boosters: float
-        new_vaccinations: float
-        new_vaccinations_smoothed: float
-        total_vaccinations_per_hundred: float
-        people_vaccinated_per_hundred: float
-        people_fully_vaccinated_per_hundred: float
-        total_boosters_per_hundred: float
-        new_vaccinations_smoothed_per_million: float
-        new_people_vaccinated_smoothed: float
-        new_people_vaccinated_smoothed_per_hundred: float
-        stringency_index: float
-        population_density: float
-        median_age: float
-        aged_65_older: float
-        aged_70_older: float
-        gdp_per_capita: float
-        extreme_poverty: float
-        cardiovasc_death_rate: float
-        diabetes_prevalence: float
-        female_smokers: float
-        male_smokers: float
-        handwashing_facilities: float
-        hospital_beds_per_thousand: float
-        life_expectancy: float
-        human_development_index: float
-        population: float
-        excess_mortality_cumulative_absolute: float
-        excess_mortality_cumulative: float
-        excess_mortality: float
-        excess_mortality_cumulative_per_million: float
+# Changed in 2025-05-28, see https://docs.getdbt.com/faqs/Seeds/load-raw-data-with-seed
+# seeds:
+#   covid_insights_pipeline:
+#     owid_covid_data:
+#       +column_types:
+#         iso_code: string
+#         continent: string
+#         location: string
+#         date: date
+#         total_cases: float
+#         new_cases: float
+#         new_cases_smoothed: float
+#         total_deaths: float
+#         new_deaths: float
+#         new_deaths_smoothed: float
+#         total_cases_per_million: float
+#         new_cases_per_million: float
+#         new_cases_smoothed_per_million: float
+#         total_deaths_per_million: float
+#         new_deaths_per_million: float
+#         new_deaths_smoothed_per_million: float
+#         reproduction_rate: float
+#         icu_patients: float
+#         icu_patients_per_million: float
+#         hosp_patients: float
+#         hosp_patients_per_million: float
+#         weekly_icu_admissions: float
+#         weekly_icu_admissions_per_million: float
+#         weekly_hosp_admissions: float
+#         weekly_hosp_admissions_per_million: float
+#         total_tests: float
+#         new_tests: float
+#         total_tests_per_thousand: float
+#         new_tests_per_thousand: float
+#         new_tests_smoothed: float
+#         new_tests_smoothed_per_thousand: float
+#         positive_rate: float
+#         tests_per_case: float
+#         tests_units: string
+#         total_vaccinations: float
+#         people_vaccinated: float
+#         people_fully_vaccinated: float
+#         total_boosters: float
+#         new_vaccinations: float
+#         new_vaccinations_smoothed: float
+#         total_vaccinations_per_hundred: float
+#         people_vaccinated_per_hundred: float
+#         people_fully_vaccinated_per_hundred: float
+#         total_boosters_per_hundred: float
+#         new_vaccinations_smoothed_per_million: float
+#         new_people_vaccinated_smoothed: float
+#         new_people_vaccinated_smoothed_per_hundred: float
+#         stringency_index: float
+#         population_density: float
+#         median_age: float
+#         aged_65_older: float
+#         aged_70_older: float
+#         gdp_per_capita: float
+#         extreme_poverty: float
+#         cardiovasc_death_rate: float
+#         diabetes_prevalence: float
+#         female_smokers: float
+#         male_smokers: float
+#         handwashing_facilities: float
+#         hospital_beds_per_thousand: float
+#         life_expectancy: float
+#         human_development_index: float
+#         population: float
+#         excess_mortality_cumulative_absolute: float
+#         excess_mortality_cumulative: float
+#         excess_mortality: float
+#         excess_mortality_cumulative_per_million: float

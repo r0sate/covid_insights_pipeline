@@ -1,0 +1,7 @@
+sources:
+  - name: dbt_raw
+    database: COVID_DB
+    schema: DBT_RAW
+    tables:
+      - name: owid_covid_data_raw
+        description: "Raw OWID COVID-19 table loaded directly from the CSV source"

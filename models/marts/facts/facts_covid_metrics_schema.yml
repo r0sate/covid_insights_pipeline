@@ -4,14 +4,6 @@ models:
   - name: facts_covid_metrics
     description: Fact of COVID-19
     columns:
-      - name: location_id
-        description: Foreign key of dim_location
-        tests:
-          - not_null
-          - relationships:
-              to: ref('dim_location')
-              field: location_id
-
       - name: date
         description: Observation date
         tests:

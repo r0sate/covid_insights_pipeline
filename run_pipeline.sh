@@ -1,20 +1,25 @@
 #!/bin/bash
-set -e  # exit on first error
+set -e  # Exit on first error
+set -o pipefail
 
-echo "Fetching latest COVID-19 data from OWID..."
-python fetch_data.py
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
 
-echo "Seeding data into your warehouse..."
-dbt seed
+log "🚀 Starting COVID-19 Data Pipeline..."
 
-echo "Running dbt models..."
+log "📤 Uploading raw COVID-19 data to Snowflake..."
+python scripts/upload_raw.py
+
+log "🏗  Running all dbt models..."
 dbt run
 
-echo "Running dbt tests..."
+log "✅ Running dbt tests..."
 dbt test
 
-echo "Generating documentation..."
+log "📚 Generating documentation..."
 dbt docs generate
 
-echo "Done!"
-echo "To view the docs, run: dbt docs serve"
+log "✅ Done!"
+echo ""
+log "To view the docs, run: dbt docs serve"
