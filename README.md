@@ -1,204 +1,113 @@
-# 🧪 COVID Insights Pipeline (dbt + Snowflake)
+# 📤 COVID-19 Data Uploader (OWID → Snowflake)
 
-This project implements a transformation pipeline using **dbt (Data Build Tool)**, structured around public COVID-19 data from [Our World in Data (OWID)](https://ourworldindata.org/coronavirus). The goal is to organize this data into clean, analytics-ready tables following a layered architecture (raw → staging → marts), suitable for BI tools like Power BI and Tableau.
+This repository contains a Python script to **download COVID-19 data from Our World in Data (OWID)** and **upload it to Snowflake**, preparing it for downstream analytics pipelines (e.g., dbt transformations).
 
 ---
 
-## 📁 Project Structure
+## 🌐 Source
+
+- **Data URL:** [Our World in Data – COVID-19 dataset](https://covid.ourworldindata.org/data/owid-covid-data.csv)
+- **Format:** CSV
+- **Updated:** Daily
+
+---
+
+## 🚀 What This Script Does
+
+- Downloads the most recent `owid-covid-data.csv` file.
+- Filters for **new records only**, based on the max date in your Snowflake table.
+- Cleans and saves a temporary CSV if needed.
+- Uploads new data to a Snowflake table: `COVID_DB.DBT_RAW.OWID_COVID_DATA_RAW`.
+- Uses the `write_pandas()` function for efficient loading.
+
+---
+
+## 📁 File Structure
 
 ```
-covid_insights_pipeline/
-│
-├── models/
-│   ├── staging/              ← Cleaned raw data (views)
-│   └── marts/
-│       ├── dimensions/       ← Dimension tables (dim_date, dim_location, etc.)
-│       └── facts/            ← Main fact table (fct_covid_metrics)
-│
-├── seeds/                    ← OWID CSV data
-├── macros/                   ← Custom macros (optional)
-├── tests/                    ← SQL tests (data quality, logic)
-├── dbt_project.yml           ← Main dbt config file
+.
+├── scripts/
+│   └── upload_raw.py        ← Main script for download + upload
+├── tmp/                     ← Temporary local storage
+├── .env                     ← Snowflake credentials (not committed)
+├── requirements.txt         ← Python dependencies
 └── README.md
 ```
 
 ---
 
-## 🧩 Components
+## 🔐 Environment Variables
 
-### 🔹 Seeds
-- `owid_covid_data.csv`: downloaded directly from OWID
-  - Loaded into the `DBT_RAW` schema
-  - Column types defined via `column_types` in `dbt_project.yml`
+This project uses environment variables to manage Snowflake credentials.  
+Create a `.env` file in the project root:
 
-### 🔹 Staging (`DBT_STAGING`)
-- Raw cleanup and casting
-- Example: `stg_owid_covid_data.sql`
+```env
+SNOWFLAKE_USER=your_user
+SNOWFLAKE_PASSWORD=your_password
+SNOWFLAKE_ACCOUNT=your_account
+SNOWFLAKE_WAREHOUSE=COVID_WH
+SNOWFLAKE_DATABASE=COVID_DB
+SNOWFLAKE_SCHEMA=DBT_RAW
+```
 
-### 🔹 Dimensions (`DBT_DIM`)
-- `dim_location`: countries and regions
-- `dim_location_type`: type indicator (country vs. aggregate)
-- `dim_date`: calendar table for time-based joins
-
-### 🔹 Facts (`DBT_FACT`)
-- `fct_covid_metrics`: daily metrics per country
+> ⚠️ **Never commit your `.env` file.** Add it to `.gitignore`.
 
 ---
 
-## ✅ Data Quality Tests
+## 📦 Installation
 
-Includes:
-- Standard `dbt` tests: `not_null`, `unique`, `relationships`
-- Custom logic with [dbt-expectations](https://hub.getdbt.com/calogica/dbt_expectations/latest/)
-- Custom SQL tests:
-  - `test_missing_dates_per_country.sql`
-  - `test_total_cases_monotonic.sql`
-
----
-
-## 🚀 How to Run
-
-1. Install dependencies
-
-```
-dbt deps
-```
-
-2. Fetch the OWID dataset
-
-```
-python fetch_data.py
-```
-
-Or with Makefile (if available):
-
-```
-make fetch
-```
-
-3. Load the seed data
-
-```
-dbt seed
-```
-
-4. Build all models
-
-```
-dbt run
-```
-
-5. Run data quality tests
-
-```
-dbt test
-```
-
-6. (Optional) Generate and view documentation
-
-```
-dbt docs generate
-dbt docs serve
-```
-
----
-
-## 🐚 Optional: Shell Script for Full Pipeline Execution
-
-If you prefer running the full dbt pipeline via a shell script, you can use the provided `run_pipeline.sh` file:
+Create and activate a virtual environment (recommended), then install dependencies:
 
 ```bash
-#!/bin/bash
-set -e  # Exit on first error
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-echo "🔽 Fetching latest COVID-19 data from OWID..."
-python fetch_data.py
-
-echo "🌱 Seeding data into your warehouse..."
-dbt seed
-
-echo "🏗️ Running dbt models..."
-dbt run
-
-echo "✅ Running dbt tests..."
-dbt test
-
-echo "📘 Generating documentation..."
-dbt docs generate
-
-echo "✨ Done!"
+pip install -r requirements.txt
 ```
 
-### 📦 How to use:
+---
+
+## ⚙️ Usage
+
+To run the ingestion script:
 
 ```bash
-chmod +x run_pipeline.sh
-./run_pipeline.sh
+python scripts/upload_raw.py
 ```
 
-This will sequentially execute:  
-1. Data fetch from OWID  
-2. Seeding into Snowflake  
-3. Model builds  
-4. Data quality tests  
-5. Documentation generation  
+Output:
 
-Make sure your virtual environment or dbt environment is activated before running the script.
+- Confirms if new data was found
+- Uploads the delta to Snowflake
+- Deletes the temporary file afterward
 
 ---
 
-## 🏗️ Snowflake Structure
+## 🛠 Dependencies
 
-| Layer      | Schema         | Description                          |
-|------------|----------------|--------------------------------------|
-| Raw        | DBT_RAW        | Seed data (OWID)                     |
-| Staging    | DBT_STAGING    | Views with cleaned, typed columns    |
-| Dimensions | DBT_DIM        | Lookup/dimension tables              |
-| Facts      | DBT_FACT       | Fact table with COVID-19 metrics     |
+- `pandas`
+- `python-dotenv`
+- `snowflake-connector-python[pandas]`
+
+> All specified in `requirements.txt`.
 
 ---
 
-## 🔐 Permissions (Example)
+## 📦 Optional: Integrate with dbt
 
-```sql
-GRANT USAGE ON DATABASE COVID_DB TO ROLE MASTER_ROLE;
-GRANT USAGE ON WAREHOUSE COVID_WH TO ROLE MASTER_ROLE;
+Once the data is loaded into `DBT_RAW`, it can be referenced as a source in your dbt project:
 
-GRANT USAGE ON SCHEMA COVID_DB.DBT_RAW TO ROLE MASTER_ROLE;
-GRANT USAGE ON SCHEMA COVID_DB.DBT_STAGING TO ROLE MASTER_ROLE;
-GRANT USAGE ON SCHEMA COVID_DB.DBT_DIM TO ROLE MASTER_ROLE;
-GRANT USAGE ON SCHEMA COVID_DB.DBT_FACT TO ROLE MASTER_ROLE;
-
-GRANT SELECT ON FUTURE TABLES IN SCHEMA COVID_DB.DBT_FACT TO ROLE MASTER_ROLE;
-GRANT ROLE MASTER_ROLE TO USER covid_user_access;
+```yaml
+sources:
+  - name: dbt_raw
+    database: COVID_DB
+    schema: DBT_RAW
+    tables:
+      - name: owid_covid_data_raw
 ```
-
----
-
-## 🛠 Requirements
-
-- Python 3.8+
-- dbt >= 1.6
-- Snowflake account with appropriate roles
-- dbt packages:
-  - `dbt-utils`
-  - `dbt-expectations`
-
----
-
-## 📌 Notes
-
-- All models must reside in proper subfolders (`staging/`, `marts/`) or dbt will raise schema errors
-- Use a neutral `schema: dbt` in `profiles.yml` to avoid automatic schema name concatenation
-- The project uses naming conventions like `DBT_RAW`, `DBT_STAGING`, etc. for clarity
 
 ---
 
 ## 📫 Contact
 
-E-mail me: rosate.lucas@gmail.com
-
-
-## 🛡️ License
-
-This project is intended for educational and analytical purposes. The data may be subject to updates and structural changes from the original source.
+For questions or improvements, reach out at: rosate.lucas@gmail.com

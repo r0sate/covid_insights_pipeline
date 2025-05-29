@@ -1,3 +1,5 @@
+version: 2
+
 sources:
   - name: dbt_raw
     database: COVID_DB
