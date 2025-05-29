@@ -29,6 +29,10 @@ This repository contains a Python script to **download COVID-19 data from Our Wo
 ├── scripts/
 │   └── upload_raw.py        ← Main script for download + upload
 ├── tmp/                     ← Temporary local storage
+├── tests/                   ← Custom SQL tests for data quality
+│   ├── test_missing_dates_per_country.sql
+│   └── test_total_cases_monotonic_or_constant.sql
+├── run_pipeline.sh          ← Shell script to automate full pipeline
 ├── .env                     ← Snowflake credentials (not committed)
 ├── requirements.txt         ← Python dependencies
 └── README.md
@@ -75,11 +79,23 @@ To run the ingestion script:
 python scripts/upload_raw.py
 ```
 
-Output:
+To run the full pipeline including dbt models and tests:
 
-- Confirms if new data was found
-- Uploads the delta to Snowflake
-- Deletes the temporary file afterward
+```bash
+chmod +x run_pipeline.sh
+./run_pipeline.sh
+```
+
+---
+
+## ✅ Tests
+
+This project includes SQL-based data quality checks:
+
+- `test_missing_dates_per_country.sql`: checks if each iso_code has full date coverage.
+- `test_total_cases_monotonic_or_constant.sql`: flags rows where cumulative cases are stagnant or decrease.
+
+These tests are triggered automatically by `dbt test`.
 
 ---
 
@@ -111,3 +127,30 @@ sources:
 ## 📫 Contact
 
 For questions or improvements, reach out at: rosate.lucas@gmail.com
+
+
+---
+
+## 🧪 Column-Level Tests with dbt-expectations
+
+This project also uses the [`dbt-expectations`](https://hub.getdbt.com/calogica/dbt_expectations/latest/) package for validating numerical integrity of selected fields:
+
+| Column                  | Rule                                     |
+|-------------------------|------------------------------------------|
+| `date`                 | Must not be null                         |
+| `total_cases`          | Must be strictly greater than 0          |
+| `new_cases`            | Must be greater than or equal to 0       |
+| `total_deaths`         | Must be greater than or equal to 0       |
+| `people_fully_vaccinated` | Must be greater than or equal to 0   |
+| `total_tests`          | Must be greater than or equal to 0       |
+| `new_vaccinations`     | Must be greater than or equal to 0       |
+| `positive_rate`        | Must be between 0 and 1 inclusive        |
+
+These tests are declared in `facts_covid_metrics.yml` and are executed with:
+
+```bash
+dbt test
+```
+
+---
+
