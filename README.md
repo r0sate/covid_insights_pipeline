@@ -99,6 +99,28 @@ These tests are triggered automatically by `dbt test`.
 
 ---
 
+## 🧪 Column-Level Tests with dbt-expectations
+
+This project also uses the [`dbt-expectations`](https://hub.getdbt.com/calogica/dbt_expectations/latest/) package for validating numerical integrity of selected fields:
+
+| Column                  | Rule                                     |
+|-------------------------|------------------------------------------|
+| `date`                 | Must not be null                         |
+| `total_cases`          | Must be strictly greater than 0          |
+| `new_cases`            | Must be greater than or equal to 0       |
+| `total_deaths`         | Must be greater than or equal to 0       |
+| `people_fully_vaccinated` | Must be greater than or equal to 0   |
+| `total_tests`          | Must be greater than or equal to 0       |
+| `new_vaccinations`     | Must be greater than or equal to 0       |
+| `positive_rate`        | Must be between 0 and 1 inclusive        |
+
+These tests are declared in `facts_covid_metrics.yml` and are executed with:
+
+```bash
+dbt test
+```
+---
+
 ## 🛠 Dependencies
 
 - `pandas`
@@ -131,26 +153,5 @@ For questions or improvements, reach out at: rosate.lucas@gmail.com
 
 ---
 
-## 🧪 Column-Level Tests with dbt-expectations
 
-This project also uses the [`dbt-expectations`](https://hub.getdbt.com/calogica/dbt_expectations/latest/) package for validating numerical integrity of selected fields:
-
-| Column                  | Rule                                     |
-|-------------------------|------------------------------------------|
-| `date`                 | Must not be null                         |
-| `total_cases`          | Must be strictly greater than 0          |
-| `new_cases`            | Must be greater than or equal to 0       |
-| `total_deaths`         | Must be greater than or equal to 0       |
-| `people_fully_vaccinated` | Must be greater than or equal to 0   |
-| `total_tests`          | Must be greater than or equal to 0       |
-| `new_vaccinations`     | Must be greater than or equal to 0       |
-| `positive_rate`        | Must be between 0 and 1 inclusive        |
-
-These tests are declared in `facts_covid_metrics.yml` and are executed with:
-
-```bash
-dbt test
-```
-
----
 
