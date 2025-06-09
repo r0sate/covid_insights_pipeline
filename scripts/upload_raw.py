@@ -1,5 +1,8 @@
 
-from os import getcwd, path, remove, environ
+from os import getcwd, path, remove,getenv
+
+from dotenv import load_dotenv
+
 from datetime import date
 
 from typing import Optional
@@ -8,8 +11,11 @@ from snowflake.connector import connect
 from snowflake.connector.cursor import SnowflakeCursor
 from snowflake.connector.pandas_tools import write_pandas
 
+import argparse
+
 import pandas as pd
 
+load_dotenv()
 
 
 # Function developed in order to download and save the .csv file into the destined folder path
@@ -138,20 +144,17 @@ def load_raw_data(file_path: str):
 
     # Connections settings
     conn = connect(
-        user=environ['SNOWFLAKE_USER'],
-        password=environ['SNOWFLAKE_PASSWORD'],
-        account=environ['SNOWFLAKE_ACCOUNT'],
-        warehouse=environ['SNOWFLAKE_WAREHOUSE'],
-        database=environ['SNOWFLAKE_DATABASE'],
-        schema=environ['SNOWFLAKE_SCHEMA'],
+        user=getenv('SNOWFLAKE_USER'),
+        password=getenv('SNOWFLAKE_PASSWORD'),
+        account=getenv('SNOWFLAKE_ACCOUNT'),
+        warehouse=getenv('SNOWFLAKE_WAREHOUSE'),
+        database=getenv('SNOWFLAKE_DATABASE'),
+        schema=getenv('SNOWFLAKE_SCHEMA'),
         client_session_keep_alive=False,
         session_parameters={"QUERY_TAG": "debug_dbt_user"}
     )
 
     cursor: SnowflakeCursor = conn.cursor()
-
-
-    tmp_file_path: str = file_path[:-4] + "_tmp.csv"
 
     try:
         if not table_exists(cursor, TABLE_NAME):
@@ -161,22 +164,45 @@ def load_raw_data(file_path: str):
         max_date: Optional[date] = get_max_date(cursor, TABLE_NAME)
         # print(max_date)
 
+
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--force-update", action="store_true")
+        args = parser.parse_args()
+
+
         df: pd.DataFrame = pd.read_csv(file_path)
         df['date'] = pd.to_datetime(df['date'], unit='ns').dt.date
+        # df.drop_duplicates(subset=["iso_code", "date"], keep="last", inplace=True)
+        # df = df[
+        #     ~(
+        #         df['new_cases'].notna() & df['population'].notna() &
+        #         (
+        #             ((df['population'] < 10_000) & (df['new_cases'] > df['population'] * 0.30)) |  # until 30% for micro-countries
+        #             ((df['population'] < 100_000) & (df['new_cases'] > df['population'] * 0.20)) |  # until 20%
+        #             ((df['population'] < 1_000_000) & (df['new_cases'] > df['population'] * 0.10)) |  # until 10%
+        #             ((df['population'] < 10_000_000) & (df['new_cases'] > df['population'] * 0.08)) |  # until 7%
+        #             ((df['population'] < 100_000_000) & (df['new_cases'] > df['population'] * 0.07)) |  # until 5%
+        #             ((df['population'] < 1_000_000_000) & (df['new_cases'] > df['population'] * 0.05)) |  # until 3%
+        #             (df['new_cases'] > df['population'] * 0.02)  # above 1 bi: max 2%
+        #         )
+        #     )
+        # ]
+        df.reset_index(drop=True, inplace=True)
 
-        filtered_df: pd.DataFrame = df[df["date"] > max_date] if max_date else df 
-
-       
-
-        filtered_df.to_csv(tmp_file_path, index=False)
         
-        cursor.execute(f"PUT file://{tmp_file_path} @%{TABLE_NAME} AUTO_COMPRESS=TRUE")
-        cursor.execute(f"LIST @%{TABLE_NAME}")
-        # print(cursor.fetchall())
+        
+        if not args.force_update:
+            df: pd.DataFrame = df[df["date"] > max_date] if max_date else df 
+        else:
+            print("--force-update selected, the tables will be reseted and all rows will be uploaded again...")
+            print("Deleting...")
+            cursor.execute(f"TRUNCATE TABLE DBT_RAW.{TABLE_NAME}")
+            print("Deleted...\nUploading all data again...")
 
         success, nchunks, nrows, _ = write_pandas(
                     conn=conn,
-                    df=filtered_df,
+                    df=df,
                     table_name=TABLE_NAME,
                     database='COVID_DB',
                     schema='DBT_RAW',
@@ -184,20 +210,26 @@ def load_raw_data(file_path: str):
                 )
 
         if success:
-            print(f"[INFO] {nrows} linhas inseridas com sucesso via `write_pandas`.")
+            print(f"[INFO] {nrows} lines sucessfully inserted via `write_pandas`.")
         else:
-            print("[ERROR] Falha no carregamento via `write_pandas`.")
+            print("[ERROR] Load failed `write_pandas`.")
 
     
     finally:
-        if path.exists(tmp_file_path):
-            remove(tmp_file_path)
+ 
         conn.close()
 
 
 if __name__ == "__main__":
     URL_ADDRESS = "https://covid.ourworldindata.org/data/owid-covid-data.csv"
     file_path: str = path.join(getcwd(), "tmp", "owid_covid_data.csv")
+    
 
-    # if fetch_data(URL_ADDRESS, file_path):
-    load_raw_data(file_path)
+    # Updates with the most recent data provided by Our World in Data
+    if fetch_data(URL_ADDRESS, file_path):
+
+        # It loads to Snowflake
+       load_raw_data(file_path)
+
+    if path.exists(file_path):
+        remove(file_path)

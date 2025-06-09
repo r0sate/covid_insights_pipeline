@@ -6,10 +6,19 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+
+FORCE_UPDATE=""
+for arg in "$@"; do
+  if [[ "$arg" == "--force-update" ]]; then
+    FORCE_UPDATE="--force-update"
+  fi
+done
+
+
 log "🚀 Starting COVID-19 Data Pipeline..."
 
 log "📤 Uploading raw COVID-19 data to Snowflake..."
-python scripts/upload_raw.py
+python scripts/upload_raw.py $FORCE_UPDATE
 
 log "🏗  Running all dbt models..."
 dbt run

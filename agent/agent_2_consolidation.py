@@ -7,7 +7,7 @@ def call_llm_agent2(agent1_response: str) -> str:
     prompt = build_prompt_agent2(agent1_response)
     client = OpenAI(
         base_url=os.getenv("OPENAI_BASE_URL"),
-        api_key=os.get_env("OPENROUTER_API_KEY")
+        api_key=os.getenv("OPENROUTER_API_KEY")
     )
 
     response = client.chat.completions.create(

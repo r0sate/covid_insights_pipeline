@@ -3,7 +3,7 @@ from openai import OpenAI
 from .prompts import build_prompt_agent1
 
 def call_llm_agent1(user_question: str, data_json: str) -> str:
-    prompt = build_prompt_agent1(question, data_json)
+    prompt = build_prompt_agent1(user_question, data_json)
 
     client = OpenAI(base_url=os.getenv("OPENAI_BASE_URL"), api_key=os.getenv("OPENROUTER_API_KEY"))
     response = client.chat.completions.create(
