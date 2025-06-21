@@ -1,0 +1,21 @@
+body {
+  font-family: sans-serif;
+  background: #f4f4f4;
+}
+.chat-container {
+  width: 500px;
+  margin: 40px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+#chat-box {
+  height: 300px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.user-msg, .agent-msg {
+  margin: 5px 0;
+}

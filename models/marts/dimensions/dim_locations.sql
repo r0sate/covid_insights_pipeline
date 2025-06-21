@@ -1,5 +1,5 @@
 WITH valid_countries AS (
-    SELECT
+    SELECT DISTINCT
         iso_code,
         location,
         continent,
@@ -9,7 +9,7 @@ WITH valid_countries AS (
       AND iso_code NOT LIKE 'OWID_%'
 ),
 aggregated_regions AS (
-    SELECT
+    SELECT DISTINCT
         iso_code,
         location,
         CAST(NULL AS VARCHAR) AS continent,
@@ -20,4 +20,4 @@ aggregated_regions AS (
 
 SELECT * FROM valid_countries
 UNION
-SELECT * FROM aggregated_regions;
+SELECT * FROM aggregated_regions
