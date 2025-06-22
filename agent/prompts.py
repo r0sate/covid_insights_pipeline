@@ -27,6 +27,8 @@ Allowed Columns from MART.DIM_LOCATIONS:
 - location, continent, location_type
 
 Rules:
+- Always include in the SELECT clause the columns: "location", "date", "iso_code", and "population"
+- The column "location" exists only in MART.DIM_LOCATIONS — join it via: LEFT JOIN MART.DIM_LOCATIONS AS d ON f.iso_code = d.iso_code
 - Use analytic functions (LAG, SUM() OVER, AVG() OVER) when calculating trends.
 - Use LEFT JOIN MART.DIM_LOCATIONS AS d ON f.iso_code = d.iso_code when location, continent, or location_type is required.
 - Use table aliases: 'f' for MART.FACTS_COVID_METRICS, 'd' for MART.DIM_LOCATIONS, and 't' for MART.DIM_LOCATIONS_TYPES.
@@ -45,12 +47,12 @@ IMPORTANT:
 - You must return only the final SQL query as plain text — with no explanation, commentary, markdown, or formatting.
 - Do not write any thoughts, reasoning steps, or internal planning.
 - Return exactly one executable Snowflake SQL query, and nothing else.
-- Always remember to exclude Aggregated regions, if it is asked only by countries 0 FOR COUNTRY AND 1 FOR REGIONS.
-
+- Always remember to exclude Aggregated regions, if it is asked only by countries (0 for Country and 1 for Regions).
 
 If the question is ambiguous:
 - If the user does not clearly specify which COVID-19 metrics to analyze, assume the goal is to extract meaningful temporal insights using key indicators:
   - new_cases, new_deaths, total_cases, total_deaths, total_vaccinations, people_fully_vaccinated
+  Always include the columns "location", "date", "iso_code", and "population".
   Use the most recent date range specified by the user (or default to last 30 days), and generate a SQL query that shows trends over time, grouped by date and location.
 - For other types of ambiguity (e.g. missing date range), respond with a single line:
   CLARIFICATION NEEDED: [state what needs to be clarified]
@@ -70,13 +72,21 @@ def build_prompt_agent1(user_question: str, data_json: str) -> str:
     Based on the following dataset: {data_json}
 
     Break down the metric involved, detect relevant trends, and highlight anomalies.
+    Do not include or speculate using external data sources. All insights must be derived solely from the provided OWID dataset.
 """
 
 
 def build_prompt_agent2(agent1_output: str) -> str:
     return f"""
-    You are a data storyteller. The following technical explanation was produced by a dataa analyst:
+    You are a data storyteller. The following technical explanation was produced by a data analyst:
     {agent1_output}
 
-    Convert this analysis into a clear, readable summary suitable for public health deicision-makers.
+    Rewrite this as a clear, concise summary intended for public health decision-makers.
+    Do not mention missing data, caveats, or suggestions for future analysis.
+    Do not offer recommendations or visual aids unless already included.
+    Do not add follow-up questions or invitations.
+    Do not describe the analysis as hypothetical or speculative. Present it as a factual summary.
+    Just return a well-structured, standalone summary.
+    Always pair each key insight with relevant quantitative data (e.g., average values, peaks, trends).
+A   ll statements must be grounded strictly in the OWID dataset provided by the analyst — do not include any external assumptions or data.
 """
