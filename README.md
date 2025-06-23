@@ -18,7 +18,7 @@ This repository automates the ingestion, transformation, and analysis of COVID-1
 
 ### 📊 Power BI Dashboard
 
-![Power BI Dashboard](https://i.imgur.com/y9BowUW.gif)
+![Power BI Dashboard](https://i.imgur.com/PqnX2eN.gif)
 
 ### 💬 WebSocket Interface
 
@@ -36,13 +36,16 @@ This project automates the ingestion and transformation of COVID-19 data through
 - **Staging Layer (`DBT.STAGING`)**: Cleans and formats raw data.
 - **Mart Layer (`DBT.MART`)**: Builds `facts_covid_metrics`, `dim_date`, and `dim_location`.
 
-### 3. AI-Augmented Analytics via WebSocket
+### 3.  Power BI + AI Interaction (Independent Applications)
 
-A Flask-based WebSocket server connects Power BI to a trio of intelligent agents for real-time question answering:
+- **Power BI Visual:** An interactive dashboard built in Power BI that consumes transformed data from Snowflake to analyze COVID-19 metrics.
+- **Web-based Frontend (Flask + WebSocket):** A separate web application that allows users to input natural language questions.
+- **AI Agent Orchestration:**
+  - The frontend sends user prompts via WebSocket to a Flask backend.
+  - The Flask server queries the data and routes the prompt to 3 AI agents.
+  - A consolidated response is returned and displayed in real time in the web interface.
+- **Note:** Power BI and the Flask/WebSocket app are **independent applications**, but both consume the **same data from Snowflake**.
 
-```
-Power BI ⇄ WebSocket ⇄ Flask Server ⇄ AI Agents ⇄ Snowflake
-```
 
 #### Agents:
 - **Agent 1 (Factual):** Fetches metrics from Snowflake.
