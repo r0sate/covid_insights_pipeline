@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Get Insights about COVID</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f4f7f9;
+            margin: 0;
+            padding-top: 80px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .export-buttons {
+            position: fixed;
+            top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .export-buttons span {
+            font-size: 14px;
+            color: #555;
+            margin-right: 5px;
+        }
+
+        .export-buttons button {
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-btn {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.2s ease;
+        }
+
+        .clear-btn:hover {
+            background-color: #b71c1c;
+        }
+
+
+        .chat-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 900px;
+            height: 800px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            margin: 0 0 20px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        }
+
+        #chat-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #fafafa;
+            font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-msg,
+        .agent-msg {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 4px;
+            color: #fff;
+            display: inline-block;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .user-msg {
+            align-self: flex-end;
+            text-align: right;
+            background: #0288d1;
+        }
+
+        .agent-msg {
+            align-self: flex-start;
+            text-align: left;
+            background: #444;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: #ccc;
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        #user-input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area button {
+            background-color: #0288d1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .typing-indicator {
+            background: #e0e0e0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            max-width: 75%;
+            margin-bottom: 10px;
+            color: #000;
+            display: none;
+            gap: 4px;
+            align-self: flex-start;
+        }
+            .error-box {
+                display: none;
+                background-color: #ffe6e6;
+                color: #b30000;
+                border: 1px solid #ff4d4d;
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                font-size: 14px;
+                white-space: pre-line;
+            }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background-color: #999;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+
+            50% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h2>Get Insights about COVID</h2>
+        <div id="error-box" class="error-box"></div>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <button onclick="clearChatHistory()" class="clear-btn">Clear History</button>
+        </div>
+        <div id="chat-box"></div>
+        <div id="typing-bubble" class="agent-msg typing-indicator">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type your question...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = "chat_history";
+
+        function saveHistory() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+        }
+
+        function clearChatHistory() {
+            if (confirm("Are you sure you want to clear the chat history?")) {
+                localStorage.removeItem(STORAGE_KEY);
+                document.getElementById("chat-box").innerHTML = "";
+                log.length = 0;
+            }
+        }
+
+        window.onload = function () {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const messages = JSON.parse(saved);
+                messages.forEach(({ role, timestamp, message }) => {
+                    const div = document.createElement("div");
+                    div.className = role === "User" ? "user-msg" : "agent-msg";
+                    div.innerHTML = applyMarkdown(message) + `<div class="msg-time">${timestamp}</div>`;
+                    document.getElementById("chat-box").appendChild(div);
+                });
+                document.getElementById("chat-box").scrollTop = document.getElementById("chat-box").scrollHeight;
+                log.push(...messages);
+            }
+        };
+
+        const socket = io({
+            timeout:600000,
+            reconnectionDelay: 2000,
+            pingInterval: 25000,
+            pingTimeout: 60000
+        });
+        const log = [];
+
+        function applyMarkdown(text) {
+            return text
+                // Cabeçalhos (h1 a h3)
+                .replace(/^###### (.*)$/gim, '<h6>$1</h6>')
+                .replace(/^##### (.*)$/gim, '<h5>$1</h5>')
+                .replace(/^#### (.*)$/gim, '<h4>$1</h4>')
+                .replace(/^### (.*)$/gim, '<h3>$1</h3>')
+                .replace(/^## (.*)$/gim, '<h2>$1</h2>')
+                .replace(/^# (.*)$/gim, '<h1>$1</h1>')
+
+                .replace(/^\s*---\s*$/gim, '<hr>')
+
+                // Negrito e itálico combinados
+                .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+
+                // Negrito
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+                // Itálico
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/_(.*?)_/g, '<em>$1</em>')
+
+                // Sublinhado (não markdown padrão, mas útil)
+                .replace(/__(.*?)__/g, '<u>$1</u>')
+
+                // Tachado
+                .replace(/~~(.*?)~~/g, '<del>$1</del>')
+
+                // Códigos inline
+                .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+
+                // Quebras de linha duplas em parágrafos
+                .replace(/\n{2,}/g, '</p><p>')
+
+                // Quebras de linha simples
+                .replace(/\n/g, '<br>')
+
+                // Listas com marcadores
+                .replace(/^\s*[-+*] (.*)$/gim, '<li>$1</li>')
+
+                // Links [text](url)
+                .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+
+                // Imagens ![alt](url)
+                .replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;">')
+
+                // Envolver em <p> tags (caso não tenha sido tratado)
+                .replace(/^((?!<h\d>|<li>|<p>|<img|<code>).+)$/gim, '<p>$1</p>');
+        }
+
+
+        function getTimestamp() {
+            return new Date().toLocaleString();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById("user-input");
+            const sendBtn = document.getElementById("send-btn");
+            
+
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.disabled = true;
+            input.placeholder = "Processing..."
+            sendBtn.disabled = true;
+
+            const chatBox = document.getElementById("chat-box");
+            const typingBubble = document.getElementById("typing-bubble");
+            const timestamp = getTimestamp();
+
+            chatBox.innerHTML += `<div class="user-msg">${message}<div class="msg-time">${timestamp}</div></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            typingBubble.style.display = "flex";
+
+            log.push({ role: "User", timestamp, message });
+            saveHistory();
+            socket.emit("user_message", { message });
+            input.value = "";
+        }
+
+        socket.on("agent_response", data => {
+            const chatBox = document.getElementById("chat-box");
+            const typingBubble = document.getElementById("typing-bubble");
+            const timestamp = getTimestamp();
+            const errorBox = document.getElementById("error-box");
+
+            typingBubble.style.display = "none";
+
+            console.log(data, data.error)
+            if (data.error) {
+                console.log("entrou")
+                const msg = "Error to process the question.";
+                const code = data.code || "Unknown";
+                errorBox.innerHTML = `<strong>Error to process the question.</strong><br>Mensagem: ${msg}<br>Code: ${code}`;
+                errorBox.style.display = "block";
+                log.push({ role: "Bot", timestamp, message: data.error });
+                saveHistory();
+                document.getElementById("user-input").disabled = false;
+                document.getElementById("user-input").placeholder = "Type your question..."
+                document.getElementById("send-btn").disabled = false;
+                document.getElementById("user-input").focus();
+
+                console.log("terminou")
+                return;
+            } else {
+                errorBox.style.display = "none";
+            }
+
+            const formatted = applyMarkdown(data.response);
+            chatBox.innerHTML += `<div class="agent-msg">${formatted}<div class="msg-time">${timestamp}</div></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            log.push({ role: "Bot", timestamp, message: data.response });
+            saveHistory();
+            document.getElementById("user-input").disabled = false;
+            document.getElementById("user-input").placeholder = "Type your question..."
+            document.getElementById("send-btn").disabled = false;
+            document.getElementById("user-input").focus();
+        });
+
+        document.getElementById("send-btn").addEventListener("click", sendMessage);
+        document.getElementById("user-input").addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>

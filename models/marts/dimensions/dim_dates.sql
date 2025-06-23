@@ -26,6 +26,6 @@ SELECT
     EXTRACT(YEAR FROM date_day) * 100 + extract(MONTH from date_day)                AS year_month_order,
     
     -- QUARTER-year expression plus its order for charts
-    'Q' || TO_CHAR(date_day, 'Q') || '-' || TO_CHAR(date_day, 'YYYY')               AS quarter_year,
+    'Q' || LPAD(extract(QUARTER FROM date_day), 2, '0') || '-' || TO_CHAR(date_day, 'YYYY')               AS quarter_year,
     EXTRACT(YEAR FROM date_day) * 10 + extract(QUARTER FROM date_day)               AS year_quarter_order
     FROM calendar
