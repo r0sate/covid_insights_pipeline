@@ -1,51 +1,57 @@
-# 📤 COVID-19 Data Uploader (OWID → Snowflake)
+# 🧠 COVID Insights Pipeline with AI Agents and Power BI Integration
 
-This repository contains a Python script to **download COVID-19 data from Our World in Data (OWID)** and **upload it to Snowflake**, preparing it for downstream analytics pipelines (e.g., dbt transformations).
+This repository automates the ingestion, transformation, and analysis of COVID-19 data from Our World in Data (OWID), enriched with AI-powered analytics and integrated into Power BI via WebSocket.
 
 ---
 
 ## 🌐 Source
 
-- **Data URL:** [Our World in Data – COVID-19 dataset](https://covid.ourworldindata.org/data/owid-covid-data.csv)
+- **Source:** [OWID COVID-19 Dataset](https://covid.ourworldindata.org/data/owid-covid-data.csv)
 - **Format:** CSV
-- **Updated:** Daily
+- **Update Frequency:** Daily
 
 ---
 
-
 ## 🚀 What This Pipeline Does
 
-This project automates the ingestion and transformation of COVID-19 data through two stages: a Python-based ingestion script and a dbt-based transformation layer.
+## 🖼️ Visual Overview
 
-### 🔹 Step 1: Python Ingestion (`upload_raw.py`)
-- Downloads the latest COVID-19 dataset (`owid-covid-data.csv`) from OWID.
-- Reads the content into a Pandas DataFrame and checks for new records by comparing against the max date already present in Snowflake.
-- Saves filtered records temporarily and uploads them to the `COVID_DB.DBT_RAW.OWID_COVID_DATA_RAW` table using the `snowflake-connector-python[pandas]` library.
-- Ensures efficient and incremental ingestion, avoiding duplicates.
+### 📊 Power BI Dashboard
 
-### 🔹 Step 2: dbt Transformations
-Once the raw data is loaded, `dbt-core` takes over to structure it into analytics-ready models:
+![Power BI Dashboard](https://i.imgur.com/y9BowUW.gif)
 
-- **Staging Layer (`DBT.STAGING`)**:
-  - Cleans and standardizes column types and names from the raw table.
-  - Applies light filtering and prepares a consistent interface for downstream use.
-  - Example: `stg_owid_covid_data.sql`
+### 💬 WebSocket Interface
 
-- **Mart Layer (`DBT.MART`)**:
-  - Aggregates and reshapes data into fact and dimension tables.
-  - `facts_covid_metrics.sql` builds a structured fact table with relevant indicators like cases, deaths, tests, and vaccinations per country and day.
-  - Dimension models like `dim_date.sql` provide a robust calendar table for time-based filtering and reporting.
-
-These models are materialized as **tables or views** in Snowflake and are ready for consumption by BI tools such as **Power BI** or **Tableau** through optimized star-schema joins (e.g., `facts_covid_metrics` joined with `dim_date` and `dim_location`).
-
-Together, this pipeline ensures scalable ingestion, clear data lineage, and reliable modeling for public health analytics.
+![WebSocket Interface](https://i.imgur.com/vRyQ1Zn.png)
 
 
-- Downloads the most recent `owid-covid-data.csv` file.
-- Filters for **new records only**, based on the max date in your Snowflake table.
-- Cleans and saves a temporary CSV if needed.
-- Uploads new data to a Snowflake table: `COVID_DB.DBT_RAW.OWID_COVID_DATA_RAW`.
-- Uses the `write_pandas()` function for efficient loading.
+This project automates the ingestion and transformation of COVID-19 data through three core components:
+
+### 1. Python Ingestion Script (`upload_raw.py`)
+- Downloads the latest COVID-19 dataset from OWID.
+- Filters only new records based on max date in Snowflake.
+- Uploads to `COVID_DB.DBT_RAW.OWID_COVID_DATA_RAW` via `write_pandas()`.
+
+### 2. dbt Transformations
+- **Staging Layer (`DBT.STAGING`)**: Cleans and formats raw data.
+- **Mart Layer (`DBT.MART`)**: Builds `facts_covid_metrics`, `dim_date`, and `dim_location`.
+
+### 3. AI-Augmented Analytics via WebSocket
+
+A Flask-based WebSocket server connects Power BI to a trio of intelligent agents for real-time question answering:
+
+```
+Power BI ⇄ WebSocket ⇄ Flask Server ⇄ AI Agents ⇄ Snowflake
+```
+
+#### Agents:
+- **Agent 1 (Factual):** Fetches metrics from Snowflake.
+- **Agent 2 (Insight):** Interprets and contextualizes trends.
+- **Agent 3 (Summarizer):** Crafts final answer for users.
+
+#### Power BI Visual:
+- Web-based frontend (HTML/JS or Deneb visual)
+- User input → AI agents → Real-time answers rendered
 
 ---
 
@@ -53,41 +59,62 @@ Together, this pipeline ensures scalable ingestion, clear data lineage, and reli
 
 ```
 .
+├── agent/                        ← LLM Agent definitions
+├── analyses/
+├── dbt_packages/
+├── debug.log
+├── frontend/
+│   ├── static/
+│   └── templates/
+│       └── index.html           ← WebSocket interface
+├── utils/
+│   ├── serialize.py
+│   ├── agent_bridge.py
+│   └── app.py                   ← Flask WebSocket server
+├── logs/
+├── macros/
+├── models/
+│   ├── marts/
+│   │   ├── dimensions/
+│   │   │   ├── dim_dates.sql
+│   │   │   ├── dim_locations.sql
+│   │   │   └── dim_locations_types.sql
+│   │   └── facts/
+│   │       ├── facts_covid_metrics.sql
+│   │       └── facts_covid_metrics_schema.yml
+│   └── staging/
 ├── scripts/
-│   └── upload_raw.py        ← Main script for download + upload
-├── tmp/                     ← Temporary local storage
-├── tests/                   ← Custom SQL tests for data quality
-│   ├── test_missing_dates_per_country.sql
-│   └── test_total_cases_monotonic_or_constant.sql
-├── run_pipeline.sh          ← Shell script to automate full pipeline
-├── .env                     ← Snowflake credentials (not committed)
-├── requirements.txt         ← Python dependencies
+│   └── upload_raw.py
+├── run_pipeline.sh
+├── requirements.txt
+├── .env
 └── README.md
 ```
 
 ---
 
-## 🔐 Environment Variables
-
-This project uses environment variables to manage Snowflake credentials.  
-Create a `.env` file in the project root:
+## 🔐 Environment Variables (.env)
 
 ```env
+# Snowflake credentials
 SNOWFLAKE_USER=your_user
 SNOWFLAKE_PASSWORD=your_password
 SNOWFLAKE_ACCOUNT=your_account
 SNOWFLAKE_WAREHOUSE=COVID_WH
 SNOWFLAKE_DATABASE=COVID_DB
 SNOWFLAKE_SCHEMA=DBT_RAW
+
+# AI Agent config
+OPENAI_MODEL=[paste_the_model_you_would_like_here]
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_API_KEY=your_api_key
 ```
 
-> ⚠️ **Never commit your `.env` file.** Add it to `.gitignore`.
+> ⚠️ Never commit `.env` to version control.
 
 ---
 
 ## 📦 Installation
-
-Create and activate a virtual environment (recommended), then install dependencies:
 
 ```bash
 python -m venv venv
@@ -100,14 +127,12 @@ pip install -r requirements.txt
 
 ## ⚙️ Usage
 
-To run the ingestion script:
-
+To run ingestion only:
 ```bash
 python scripts/upload_raw.py
 ```
 
-To run the full pipeline including dbt models and tests:
-
+To run the full pipeline including dbt transformations:
 ```bash
 chmod +x run_pipeline.sh
 ./run_pipeline.sh
@@ -117,63 +142,23 @@ chmod +x run_pipeline.sh
 
 ## ✅ Tests
 
-This project includes SQL-based data quality checks:
+Includes data quality tests via SQL and dbt:
 
-- `test_missing_dates_per_country.sql`: checks if each iso_code has full date coverage.
-- `test_total_cases_monotonic_or_constant.sql`: flags rows where cumulative cases are stagnant or decrease.
+- `test_missing_dates_per_country.sql`
+- `test_total_cases_monotonic_or_constant.sql`
 
-These tests are triggered automatically by `dbt test`.
+Also includes column-level expectations via `dbt-expectations`:
 
----
+| Column                     | Rule                            |
+|----------------------------|---------------------------------|
+| `date`                     | Not null                        |
+| `total_cases`              | > 0                             |
+| `new_cases`                | ≥ 0                             |
+| `total_deaths`             | ≥ 0                             |
+| `new_vaccinations`         | ≥ 0                             |
+| `positive_rate`            | Between 0 and 1 inclusive       |
 
-## 🛠 Dependencies
-
-- `pandas`
-- `python-dotenv`
-- `snowflake-connector-python[pandas]`
-
-> All specified in `requirements.txt`.
-
----
-
-## 📦 Optional: Integrate with dbt
-
-Once the data is loaded into `DBT_RAW`, it can be referenced as a source in your dbt project:
-
-```yaml
-sources:
-  - name: dbt_raw
-    database: COVID_DB
-    schema: DBT_RAW
-    tables:
-      - name: owid_covid_data_raw
-```
-
----
-
-## 📫 Contact
-
-For questions or improvements, reach out at: rosate.lucas@gmail.com
-
-
----
-
-## 🧪 Column-Level Tests with dbt-expectations
-
-This project also uses the [`dbt-expectations`](https://hub.getdbt.com/calogica/dbt_expectations/latest/) package for validating numerical integrity of selected fields:
-
-| Column                  | Rule                                     |
-|-------------------------|------------------------------------------|
-| `date`                 | Must not be null                         |
-| `total_cases`          | Must be strictly greater than 0          |
-| `new_cases`            | Must be greater than or equal to 0       |
-| `total_deaths`         | Must be greater than or equal to 0       |
-| `people_fully_vaccinated` | Must be greater than or equal to 0   |
-| `total_tests`          | Must be greater than or equal to 0       |
-| `new_vaccinations`     | Must be greater than or equal to 0       |
-| `positive_rate`        | Must be between 0 and 1 inclusive        |
-
-These tests are declared in `facts_covid_metrics.yml` and are executed with:
+Run tests with:
 
 ```bash
 dbt test
@@ -181,3 +166,6 @@ dbt test
 
 ---
 
+## 📫 Contact
+
+📧 rosate.lucas@gmail.com
